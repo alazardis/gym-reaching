@@ -13,11 +13,11 @@ class PPO:
         self.critic = FeedForwardNN(self.obs_dim, 1)
 
         self.__init__hyperparameters()
-        self.cov_var= torch.full(size=(self.act_dim, ), fill_value=0.5)
+        self.cov_var = torch.full(size=(self.act_dim, ), fill_value=0.5)
 
         self.cov_mat = torch.diag(self.cov_var)
 
-    def learm(self, total_timesteps):
+    def learn(self, total_timesteps):
         t_so_far = 0
         while t_so_far < total_timesteps:
 
