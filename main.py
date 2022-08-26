@@ -1,11 +1,10 @@
-import gym
+from angorapy.common.wrappers import make_env
+from angorapy.models import get_model_builder
+from angorapy.agent.ppo_agent import PPOAgent
+
 import gym_panda_reach
 
-env = gym.make('panda-reach-v0', disable_env_checker=True, autoreset=True)
-env.reset()
-env.reward_type = "dense" #default is "dense"
-for _ in range(100):
-    env.render()
-    obs, reward, done, info = env.step(
-        env.action_space.sample()) # take a random action
-env.close()
+env = make_env('panda-reach-v0', disable_env_checker=True, autoreset=True)
+model_builder = get_model_builder("simple", "ffn")
+agent = PPOAgent(model_builder, env)
+agent.drill(100, 10, 200)

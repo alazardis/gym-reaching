@@ -26,7 +26,7 @@ class PandaEnv(gym.Env):
         p.resetDebugVisualizerCamera(cameraDistance=1.25, cameraYaw=45, cameraPitch=-30, cameraTargetPosition=[0.65,-0.0,0.65])
         self.action_space = spaces.Box(np.array([-1]*4), np.array([1]*4))
         self.observation_space = spaces.Box(np.array([-1]*24), np.array([1]*24))
-        
+        5
     def compute_reward(self, achieved_goal, goal):
         # Compute distance between goal and the achieved goal.
         d = goal_distance(achieved_goal, goal)
@@ -39,38 +39,50 @@ class PandaEnv(gym.Env):
     def step(self, action):
         p.configureDebugVisualizer(p.COV_ENABLE_SINGLE_STEP_RENDERING)
         orientation = p.getQuaternionFromEuler([0.,-math.pi,-math.pi])
-#         dv = 0.005
+        # dv = 0.005
         dv = 0.05
-        dx = action[0] * dv
-        dy = action[1] * dv
-        dz = action[2] * dv
-        fingers = action[3]
+        # dx = action[0] * dv
+        # dy = action[1] * dv
+        # dz = action[2] * dv
+        # fingers = action[3]
 
-        currentPose = p.getLinkState(self.pandaUid, 11)
+
+        finger1_pos = action[0] * dv
+        finger2_pos = action[1] * dv
+
+        hand_id = 10
+        finger1_link_id = 11
+        finger2_link_id = 12
+
+        finger1_joint_id = 10
+        finger2_joint_id = 11
+
+        currentPose = p.getLinkState(self.pandaUid,10)
         currentPosition = currentPose[0]
-        newPosition = [currentPosition[0] + dx,
-                       currentPosition[1] + dy,
-                       currentPosition[2] + dz]
-        jointPoses = p.calculateInverseKinematics(self.pandaUid,11,newPosition, orientation)[0:7]
+        newPosition = [currentPosition[0] * dv,
+                       currentPosition[1] * dv,
+                       currentPosition[2] * dv]
+        jointPoses = p.calculateInverseKinematics(self.pandaUid,10,newPosition, orientation)[0:7]
 
-        p.setJointMotorControlArray(self.pandaUid, list(range(7))+[9,10], p.POSITION_CONTROL, list(jointPoses)+2*[fingers])
+        # p.setJointMotorControlArray(self.pandaUid, list(range(7))+[9,10], p.POSITION_CONTROL, list(jointPoses)+2*[fingers])
+        p.setJointMotorControlArray(self.pandaUid, [finger1_joint_id, finger2_joint_id], p.POSITION_CONTROL, [finger1_pos, finger2_pos])
 
         p.stepSimulation()
 
         state_object, state_object_orienation = p.getBasePositionAndOrientation(self.objectUid)
         twist_object, twist_object_orienation = p.getBaseVelocity(self.objectUid)
-        state_robot = p.getLinkState(self.pandaUid, 11)[0]
-        state_fingers = (p.getJointState(self.pandaUid,9)[0], p.getJointState(self.pandaUid, 10)[0])
-        
+        state_robot = p.getLinkState(self.pandaUid, hand_id)[0]
+        state_finger1 = p.getJointState(self.pandaUid,finger1_joint_id)[0]
+        state_finger2 = p.getJointState(self.pandaUid,finger1_joint_id)[0]
 
         # Compute reward and completition based: the reward is either dense or sparse
-        self.distance_threshold = 0.05
-        d = goal_distance(state_robot, state_object)
+        self.distance_threshold = 0.03
+        d = -abs((finger1_pos - self.distance_threshold) - (finger2_pos - self.distance_threshold))
         if d<self.distance_threshold:
-            reward = self.compute_reward(state_robot, state_object)
+            reward = self.compute_reward(state_finger1, state_finger2)
             done = True
         else:
-            reward = self.compute_reward(state_robot, state_object)
+            reward = self.compute_reward(state_finger1, state_finger2)
             done = False
 
 
@@ -90,12 +102,12 @@ class PandaEnv(gym.Env):
         object_rot = np.array(state_object_orienation) # quaternions?
         object_velp = np.array(twist_object)
         object_velr = np.array(twist_object_orienation)
-        grip_velp = np.array([dx,dy,dz])#The velocity of gripper moving
-        gripper_vel = np.array([fingers*dv]) #The velocity of gripper opening/closing
+        # grip_velp = np.array([dx,dy,dz])#The velocity of gripper moving
+        gripper_vel = np.array([finger1_pos * dv], [finger2_pos * dv]) #The velocity of gripper opening/closing
     
         obs = np.concatenate([
                     grip_pos.ravel(), object_pos.ravel(), object_rel_pos.ravel(), gripper_state, object_rot.ravel(),
-                    object_velp.ravel(), object_velr.ravel(), grip_velp.ravel(), gripper_vel.ravel(),
+                    object_velp.ravel(), object_velr.ravel(), gripper_vel.ravel(),
                 ])
         #print(np.shape(obs))
         return obs.copy(), reward, done, info
@@ -105,7 +117,7 @@ class PandaEnv(gym.Env):
         p.resetSimulation()
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING,0) # we will enable rendering after we loaded everything
         urdfRootPath=pybullet_data.getDataPath()
-        p.setGravity(0,0,-10)
+        p.setGravity(0,0,0)
 
 #         planeUid = p.loadURDF(os.path.join(urdfRootPath,"plane.urdf"), basePosition=[0,0,-0.65])
         dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -113,6 +125,7 @@ class PandaEnv(gym.Env):
 
         rest_poses = [0, -0.215, 0, -2.57, 0.0, 2.356, math.pi/4, 0.0, 0.0, 0.0]
 #         rest_poses = [0, 0, 0, 0, 0.0, 0, 0, 0.0, 0.0, 0.0]
+        print(urdfRootPath)
         self.pandaUid = p.loadURDF(os.path.join(urdfRootPath, "franka_panda/panda.urdf"),basePosition=[0,0,0.65],useFixedBase=True)
         
         for i in range(len(rest_poses)):

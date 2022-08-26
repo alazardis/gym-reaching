@@ -1,4 +1,6 @@
 /venv
+/storage
+!/venv/lib/python3.8/site-packages/pybullet_data/franka_panda/panda.urdf
 *.pyc
 *.DS_Store
 *.ipynb_checkpoints

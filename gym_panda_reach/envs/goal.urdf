@@ -2,15 +2,22 @@
 <robot name="target">
   <link name="baseLink">
 
+    <collision>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+       <geometry>
+		<mesh filename="objs/mug.obj"/>
+      </geometry>
+    </collision>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-				<sphere radius="0.025"/>
+		<mesh filename="objs/mug.obj"/>
       </geometry>
-       <material name="red">
-        <color rgba="0.9 0.0 0.0 1"/>
+      <material name="silver">
+        <color rgba="1.0 0.0 0.0 1.0"/>
       </material>
     </visual>
+
 
   </link>
 </robot>
