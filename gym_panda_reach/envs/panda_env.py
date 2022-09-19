@@ -28,13 +28,18 @@ class PandaEnv(gym.Env):
         self.action_space = spaces.Box(np.array([-1] * 4), np.array([1] * 4))
         self.observation_space = spaces.Box(np.array([-1] * 24), np.array([1] * 24))
 
-    def compute_reward(self, achieved_goal, goal):
-        # Compute distance between goal and the achieved goal.
-        d = goal_distance(achieved_goal, goal)
-        if self.reward_type == 'sparse':
-            return -(d > self.distance_threshold).astype(np.float32)
-        else:
-            return -d
+    # def compute_reward(self, achieved_goal, goal):
+    #     # Compute distance between goal and the achieved goal.
+    #     d = goal_distance(achieved_goal, goal)
+    #     if self.reward_type == 'sparse':
+    #         return -(d > self.distance_threshold).astype(np.float32)
+    #     else:
+    #         return -d
+    def compute_reward(self, joint_position, desired_position):
+        reward_finger1 = -abs(joint_position[0] - desired_position[0])
+        reward_finger2 = -abs(joint_position[1] - desired_position[1])
+        total_reward = reward_finger1 + reward_finger2
+        return total_reward
 
     def step(self, action):
         p.configureDebugVisualizer(p.COV_ENABLE_SINGLE_STEP_RENDERING)
@@ -45,46 +50,50 @@ class PandaEnv(gym.Env):
         # dy = action[1] * dv
         # dz = action[2] * dv
         # fingers = action[3]
-        finger1 = action[1]
-        finger2 = action[2]
+        finger1 = action[0]
+        finger2 = action[1]
 
-        hand_link = 10
-        finger1_link = 11
-        finger2_link = 12
+        hand_link = 9
+        finger1_link = 10
+        finger2_link = 11
 
-        hand_joint = 9
-        finger1_joint = 10
-        finger2_joint = 11
+        hand_joint = 8
+        finger1_joint = 9
+        finger2_joint = 10
 
-        currentPose = p.getLinkState(self.pandaUid, hand_joint)
-        currentPosition = currentPose[0]
+        # currentPose = p.getLinkState(self.pandaUid, hand_link)
+        # currentPosition = currentPose[0]
+        state_finger1 = p.getJointState(self.pandaUid, finger1_joint)
+        state_finger2 = p.getJointState(self.pandaUid, finger2_joint)
+        new_state_finger1 = state_finger1[0]
+        new_state_finger2 = state_finger2[0]
         # newPosition = [currentPosition[0] + dx,
         #                currentPosition[1] + dy,
         #                currentPosition[2] + dz]
-        newPosition = [currentPosition[0] + finger1,
-                       currentPosition[1] + finger2]
-        jointPoses = p.calculateInverseKinematics(self.pandaUid, hand_joint, newPosition, orientation)[0]
-
-        p.setJointMotorControlArray(self.pandaUid, [finger1_joint + finger2_joint], p.POSITION_CONTROL,
-                                    list(jointPoses) + finger1_joint + finger2_joint)
+        newPosition = [new_state_finger1 + finger1,
+                       new_state_finger2 + finger2]
+        # jointPoses = p.calculateInverseKinematics(self.pandaUid, hand_joint, newPosition, orientation)[0]
+        #
+        # p.setJointMotorControlArray(self.pandaUid, [finger1_joint + finger2_joint], p.POSITION_CONTROL,
+        #                             list(jointPoses) + finger1_joint + finger2_joint)
 
         p.stepSimulation()
 
         state_object, state_object_orienation = p.getBasePositionAndOrientation(self.objectUid)
         twist_object, twist_object_orienation = p.getBaseVelocity(self.objectUid)
-        state_robot = p.getLinkState(self.pandaUid, hand_joint)[0]
+        # state_robot = p.getLinkState(self.pandaUid, hand_link)[0]
         # state_fingers = (p.getJointState(self.pandaUid, 9)[0], p.getJointState(self.pandaUid, 10)[0])
-        state_finger1 = p.getJointState(self.pandaUid, finger1_joint)[0]
-        state_finger2 = p.getJointState(self.pandaUid, finger2_joint)[0]
+        # state_finger1 = p.getJointState(self.pandaUid, finger1_joint)[0]
+        # state_finger2 = p.getJointState(self.pandaUid, finger2_joint)[1]
 
         # Compute reward and completition based: the reward is either dense or sparse
         self.distance_threshold = 0.05
-        d = goal_distance(state_finger1, state_finger2)
+        d = goal_distance(newPosition, [0.02, 0.02])
         if d < self.distance_threshold:
-            reward = self.compute_reward(state_finger1, state_finger2)
+            reward = self.compute_reward(newPosition, [0.02, 0.02])
             done = True
         else:
-            reward = self.compute_reward(state_finger1, state_finger2)
+            reward = self.compute_reward(newPosition, [0.02, 0.02])
             done = False
 
         self.step_counter += 1
@@ -96,27 +105,24 @@ class PandaEnv(gym.Env):
         info = {'object_position': state_object}
 
         # src -> https://github.com/openai/gym/issues/1503
-        grip_pos = np.array(state_robot)
+        grip_pos = np.array([0.0, 0.0, 0.0])
         object_pos = np.array(state_object)
         object_rel_pos = object_pos - grip_pos
         gripper_state = np.array([0.5 * (state_finger1[0] + state_finger2[0])])  # this is the gripper q
         object_rot = np.array(state_object_orienation)  # quaternions?
         object_velp = np.array(twist_object)
         object_velr = np.array(twist_object_orienation)
-        # grip_velp = np.array([dx, dy, dz])  # The velocity of gripper moving
+        grip_velp = np.array([0.0, 0.0, 0.0])  # The velocity of gripper moving
         gripper_vel = np.array([finger1 + finger2])  # The velocity of gripper opening/closing
 
-        # obs = np.concatenate([
-        #     grip_pos.ravel(), object_pos.ravel(), object_rel_pos.ravel(), gripper_state, object_rot.ravel(),
-        #     object_velp.ravel(), object_velr.ravel(), grip_velp.ravel(), gripper_vel.ravel(),
         obs = np.concatenate([
             grip_pos.ravel(), object_pos.ravel(), object_rel_pos.ravel(), gripper_state, object_rot.ravel(),
-            object_velp.ravel(), object_velr.ravel(), gripper_vel.ravel(),
+            object_velp.ravel(), object_velr.ravel(), grip_velp.ravel(), gripper_vel.ravel(),
         ])
-        # print(np.shape(obs))
+        print(np.shape(obs))
         return obs.copy(), reward, done, info
 
-    def reset(self):
+    def reset(self, *args, **kwargs):
         self.step_counter = 0
         p.resetSimulation()
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 0)  # we will enable rendering after we loaded everything
