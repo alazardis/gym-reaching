@@ -61,8 +61,8 @@ class PandaEnv(gym.Env):
         finger1_joint = 9
         finger2_joint = 10
 
-        # currentPose = p.getLinkState(self.pandaUid, hand_link)
-        # currentPosition = currentPose[0]
+        currentPose = p.getLinkState(self.pandaUid, hand_link)
+        currentPosition = currentPose[0]
         state_finger1 = p.getJointState(self.pandaUid, finger1_joint)
         state_finger2 = p.getJointState(self.pandaUid, finger2_joint)
         new_state_finger1 = state_finger1[0]
@@ -73,9 +73,9 @@ class PandaEnv(gym.Env):
         newPosition = [new_state_finger1 + finger1,
                        new_state_finger2 + finger2]
         # jointPoses = p.calculateInverseKinematics(self.pandaUid, hand_joint, newPosition, orientation)[0]
-        #
-        # p.setJointMotorControlArray(self.pandaUid, [finger1_joint + finger2_joint], p.POSITION_CONTROL,
-        #                             list(jointPoses) + finger1_joint + finger2_joint)
+
+        p.setJointMotorControlArray(self.pandaUid, [finger1_joint, finger2_joint], p.POSITION_CONTROL,
+                                    newPosition)
 
         p.stepSimulation()
 
@@ -113,7 +113,7 @@ class PandaEnv(gym.Env):
         object_velp = np.array(twist_object)
         object_velr = np.array(twist_object_orienation)
         grip_velp = np.array([0.0, 0.0, 0.0])  # The velocity of gripper moving
-        gripper_vel = np.array([finger1 + finger2])  # The velocity of gripper opening/closing
+        gripper_vel = np.array([0])  # The velocity of gripper opening/closing
 
         obs = np.concatenate([
             grip_pos.ravel(), object_pos.ravel(), object_rel_pos.ravel(), gripper_state, object_rot.ravel(),
