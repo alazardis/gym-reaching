@@ -1,7 +1,6 @@
 import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
-from gws import gws
 
 import os
 import pybullet as p
@@ -9,6 +8,7 @@ import pybullet_data
 import math
 import numpy as np
 import random
+import gws
 
 MAX_EPISODE_LEN = 20 * 100
 
@@ -89,12 +89,12 @@ class PandaEnv(gym.Env):
 
         # Compute reward and completition based: the reward is either dense or sparse
         self.distance_threshold = 0.05
-        d = goal_distance(newPosition, [0.02, 0.02])
+        d = gws(self.pandaUid, self.objectUid)
         if d < self.distance_threshold:
-            reward = self.compute_reward(newPosition, [0.02, 0.02])
+            reward = self.compute_reward(self.pandaUid, self.objectUid)
             done = True
         else:
-            reward = self.compute_reward(newPosition, [0.02, 0.02])
+            reward = self.compute_reward(self.pandaUid, self.objectUid)
             done = False
 
         self.step_counter += 1
@@ -105,6 +105,8 @@ class PandaEnv(gym.Env):
 
         info = {'object_position': state_object}
 
+        motorTorque = gws(self.pandaUid, self.objectUid)
+
         # src -> https://github.com/openai/gym/issues/1503
         grip_pos = np.array([0.0, 0.0, 0.0])
         object_pos = np.array(state_object)
@@ -114,7 +116,7 @@ class PandaEnv(gym.Env):
         object_velp = np.array(twist_object)
         object_velr = np.array(twist_object_orienation)
         grip_velp = np.array([0.0, 0.0, 0.0])  # The velocity of gripper moving
-        gripper_vel = np.array([0])  # The velocity of gripper opening/closing
+        gripper_vel = np.array([motorTorque])  # The velocity of gripper opening/closing
 
         obs = np.concatenate([
             grip_pos.ravel(), object_pos.ravel(), object_rel_pos.ravel(), gripper_state, object_rot.ravel(),
