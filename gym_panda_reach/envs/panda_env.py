@@ -1,6 +1,7 @@
 import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
+from gws import gws
 
 import os
 import pybullet as p
@@ -119,7 +120,7 @@ class PandaEnv(gym.Env):
             grip_pos.ravel(), object_pos.ravel(), object_rel_pos.ravel(), gripper_state, object_rot.ravel(),
             object_velp.ravel(), object_velr.ravel(), grip_velp.ravel(), gripper_vel.ravel(),
         ])
-        print(np.shape(obs))
+        # print(np.shape(obs))
         return obs.copy(), reward, done, info
 
     def reset(self, *args, **kwargs):
@@ -127,7 +128,7 @@ class PandaEnv(gym.Env):
         p.resetSimulation()
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 0)  # we will enable rendering after we loaded everything
         urdfRootPath = pybullet_data.getDataPath()
-        p.setGravity(0, 0, -10)
+        p.setGravity(0, 0, 0)
 
         #         planeUid = p.loadURDF(os.path.join(urdfRootPath,"plane.urdf"), basePosition=[0,0,-0.65])
         dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -155,9 +156,10 @@ class PandaEnv(gym.Env):
         p.addUserDebugLine([0, 0, -1], [0, 0, 1], [0.9, 0.9, 0.9], parentObjectUniqueId=self.pandaUid,
                            parentLinkIndex=8)
 
-        state_object = [random.uniform(0.5, 0.8), random.uniform(-0.2, 0.2), random.uniform(0.65 + 0.0, 0.65 + 0.2)]
+        state_object = [0.45, 0, 0.825]
+        # state_object_orientation = p.getQuaternionFromEuler([random.uniform(0, 2.0 * math.pi), random.uniform(0, 2.0 * math.pi), random.uniform(0, 2.0 * math.pi)])
         #         self.objectUid = p.loadURDF(os.path.join(urdfRootPath, "random_urdfs/000/000.urdf"), basePosition=state_object)
-        self.objectUid = p.loadURDF(os.path.join(dir_path, "goal.urdf"), basePosition=state_object, useFixedBase=True)
+        self.objectUid = p.loadURDF(os.path.join(dir_path, "goal.urdf"), basePosition=state_object, useFixedBase=False)
         state_robot = p.getLinkState(self.pandaUid, 11)[0]
         state_fingers = (p.getJointState(self.pandaUid, 9)[0], p.getJointState(self.pandaUid, 10)[0])
         # self.observation = state_robot + state_fingers
@@ -179,7 +181,12 @@ class PandaEnv(gym.Env):
             grip_pos.ravel(), object_pos.ravel(), object_rel_pos.ravel(), gripper_state, object_rot.ravel(),
             object_velp.ravel(), object_velr.ravel(), grip_velp.ravel(), gripper_vel.ravel(),
         ])
-        return obs.copy()
+
+        #Tonio's solution
+        if "return_info" in kwargs.keys():
+            return obs.copy(), {}
+        else:
+            return obs.copy()
 
     def render(self, mode='human'):
         view_matrix = p.computeViewMatrixFromYawPitchRoll(cameraTargetPosition=[0.7, 0, 0.65 + 0.05],

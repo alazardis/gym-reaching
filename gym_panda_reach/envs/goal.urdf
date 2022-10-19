@@ -1,8 +1,8 @@
 <?xml version="1.0" ?>
 <robot name="target">
-  <link name="baseLink">
+  <link concave="yes" name="baseLink">
 
-    <collision>
+    <collision concave="yes">
         <origin rpy="0 0 0" xyz="0 0 0"/>
        <geometry>
 		<mesh filename="objs/mug.obj"/>
