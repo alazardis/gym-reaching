@@ -87,14 +87,19 @@ class PandaEnv(gym.Env):
         # state_finger1 = p.getJointState(self.pandaUid, finger1_joint)[0]
         # state_finger2 = p.getJointState(self.pandaUid, finger2_joint)[1]
 
+        rID = self.pandaUid
+        oID = self.objectUid
+
+        motorTorque = gws(rID, oID)
+
         # Compute reward and completition based: the reward is either dense or sparse
         self.distance_threshold = 0.05
-        d = gws(self.pandaUid, self.objectUid)
+        d = gws(rID, oID)
         if d < self.distance_threshold:
-            reward = self.compute_reward(self.pandaUid, self.objectUid)
+            reward = self.compute_reward(rID, oID)
             done = True
         else:
-            reward = self.compute_reward(self.pandaUid, self.objectUid)
+            reward = self.compute_reward(rID, oID)
             done = False
 
         self.step_counter += 1
@@ -104,8 +109,6 @@ class PandaEnv(gym.Env):
             done = True
 
         info = {'object_position': state_object}
-
-        motorTorque = gws(self.pandaUid, self.objectUid)
 
         # src -> https://github.com/openai/gym/issues/1503
         grip_pos = np.array([0.0, 0.0, 0.0])
@@ -159,9 +162,12 @@ class PandaEnv(gym.Env):
                            parentLinkIndex=8)
 
         state_object = [0.45, 0, 0.825]
-        # state_object_orientation = p.getQuaternionFromEuler([random.uniform(0, 2.0 * math.pi), random.uniform(0, 2.0 * math.pi), random.uniform(0, 2.0 * math.pi)])
+        state_object_orientation = p.getQuaternionFromEuler([random.uniform(0, 2.0 * math.pi),
+                                                             random.uniform(0, 2.0 * math.pi),
+                                                             random.uniform(0, 2.0 * math.pi)])
         #         self.objectUid = p.loadURDF(os.path.join(urdfRootPath, "random_urdfs/000/000.urdf"), basePosition=state_object)
-        self.objectUid = p.loadURDF(os.path.join(dir_path, "goal.urdf"), basePosition=state_object, useFixedBase=False)
+        self.objectUid = p.loadURDF(os.path.join(dir_path, "goal.urdf"), basePosition=state_object,
+                                    baseOrientation=state_object_orientation, useFixedBase=False)
         state_robot = p.getLinkState(self.pandaUid, 11)[0]
         state_fingers = (p.getJointState(self.pandaUid, 9)[0], p.getJointState(self.pandaUid, 10)[0])
         # self.observation = state_robot + state_fingers

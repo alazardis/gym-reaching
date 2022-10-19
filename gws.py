@@ -168,23 +168,3 @@ def eplison(force_torque):
             closest_point = point
 
     return shortest_distance
-
-
-
-get_obj_info(oID)
-
-while True:
-    relax(rID)
-    grasp(rID)
-    p.stepSimulation()
-    #force_torque = gws(rID, oID)
-    force_torque = gws_pyramid_extension(rID, oID)
-    #print(force_torque)
-    #print(np.array(force_torque).shape)
-    vol = volume(force_torque)
-    print("volume: ", vol)
-    ep = eplison(force_torque)
-    print("eplison: ", ep)
-
-    while True:
-        p.stepSimulation()
