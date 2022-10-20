@@ -91,7 +91,7 @@ class PandaEnv(gym.Env):
         # Compute reward and completition based: the reward is either dense or sparse
         self.distance_threshold = 0.05
         d = gws(self.pandaUid, self.objectUid)
-        if d < motorTorque:
+        if d[0] < self.distance_threshold:
             reward = self.compute_reward(self.pandaUid, self.objectUid)
             done = True
         else:
