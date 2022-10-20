@@ -1,6 +1,6 @@
 import gym
-from gym import error, spaces, utils
-from gym.utils import seeding
+from gym import spaces
+from .gws import gws
 
 import os
 import pybullet as p
@@ -8,7 +8,6 @@ import pybullet_data
 import math
 import numpy as np
 import random
-import gws
 
 MAX_EPISODE_LEN = 20 * 100
 
@@ -87,19 +86,16 @@ class PandaEnv(gym.Env):
         # state_finger1 = p.getJointState(self.pandaUid, finger1_joint)[0]
         # state_finger2 = p.getJointState(self.pandaUid, finger2_joint)[1]
 
-        rID = self.pandaUid
-        oID = self.objectUid
-
-        motorTorque = gws(rID, oID)
+        motorTorque = gws(self.pandaUid, self.objectUid)
 
         # Compute reward and completition based: the reward is either dense or sparse
         self.distance_threshold = 0.05
-        d = gws(rID, oID)
-        if d < self.distance_threshold:
-            reward = self.compute_reward(rID, oID)
+        d = gws(self.pandaUid, self.objectUid)
+        if d < motorTorque:
+            reward = self.compute_reward(self.pandaUid, self.objectUid)
             done = True
         else:
-            reward = self.compute_reward(rID, oID)
+            reward = self.compute_reward(self.pandaUid, self.objectUid)
             done = False
 
         self.step_counter += 1
