@@ -19,7 +19,7 @@ def goal_distance(goal_a, goal_b):
 class PandaEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self):
+    def __init__(self): #change GUI to DIRECT to disable rendering
         self.step_counter = 0
         self.reward_type = "dense"
         p.connect(p.GUI, options='--background_color_red=0.0 --background_color_green=0.93--background_color_blue=0.54')
@@ -35,11 +35,19 @@ class PandaEnv(gym.Env):
     #         return -(d > self.distance_threshold).astype(np.float32)
     #     else:
     #         return -d
-    def compute_reward(self, joint_position, desired_position):
-        reward_finger1 = -abs(joint_position[0] - desired_position[0])
-        reward_finger2 = -abs(joint_position[1] - desired_position[1])
-        total_reward = reward_finger1 + reward_finger2
-        return total_reward
+
+    def closest_points(self):
+        linkIndexA = 10
+        linkIndexB = 11
+        total_closest_points = p.getClosestPoints(self.pandaUid, self.objectUid, math.inf, linkIndexA) \
+                               + p.getClosestPoints(self.pandaUid, self.objectUid, math.inf, linkIndexB)
+        return total_closest_points
+
+    def compute_reward(self, pandaUid, objectUid):
+        gws_matrix = gws(pandaUid, objectUid)
+        grasp_quality = max(gws_matrix) if len(gws_matrix) else -self.closest_points()
+        return grasp_quality
+
 
     def step(self, action):
         p.configureDebugVisualizer(p.COV_ENABLE_SINGLE_STEP_RENDERING)
@@ -79,6 +87,8 @@ class PandaEnv(gym.Env):
 
         p.stepSimulation()
 
+        p.performCollisionDetection()
+
         state_object, state_object_orienation = p.getBasePositionAndOrientation(self.objectUid)
         twist_object, twist_object_orienation = p.getBaseVelocity(self.objectUid)
         # state_robot = p.getLinkState(self.pandaUid, hand_link)[0]
@@ -86,16 +96,19 @@ class PandaEnv(gym.Env):
         # state_finger1 = p.getJointState(self.pandaUid, finger1_joint)[0]
         # state_finger2 = p.getJointState(self.pandaUid, finger2_joint)[1]
 
-        motorTorque = gws(self.pandaUid, self.objectUid)
-
         # Compute reward and completition based: the reward is either dense or sparse
-        self.distance_threshold = 0.05
-        d = gws(self.pandaUid, self.objectUid)
-        if d[0] < self.distance_threshold:
-            reward = self.compute_reward(self.pandaUid, self.objectUid)
+        gws_quality = self.compute_reward(self.pandaUid, self.objectUid)
+        min_gws_quality = 0.5
+        min_steps_done = math.round(0.5 / (1.0/240.0))
+
+        if gws_quality > min_gws_quality:
+            self.__sim_done += 1
+        else:
+            self.__sim_done = 0
+
+        if self.__sim_done > min_steps_done:
             done = True
         else:
-            reward = self.compute_reward(self.pandaUid, self.objectUid)
             done = False
 
         self.step_counter += 1
@@ -115,7 +128,7 @@ class PandaEnv(gym.Env):
         object_velp = np.array(twist_object)
         object_velr = np.array(twist_object_orienation)
         grip_velp = np.array([0.0, 0.0, 0.0])  # The velocity of gripper moving
-        gripper_vel = np.array([motorTorque])  # The velocity of gripper opening/closing
+        gripper_vel = np.array([0])  # The velocity of gripper opening/closing
 
         obs = np.concatenate([
             grip_pos.ravel(), object_pos.ravel(), object_rel_pos.ravel(), gripper_state, object_rot.ravel(),
@@ -126,6 +139,7 @@ class PandaEnv(gym.Env):
 
     def reset(self, *args, **kwargs):
         self.step_counter = 0
+        self.__sim_done = 0
         p.resetSimulation()
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 0)  # we will enable rendering after we loaded everything
         urdfRootPath = pybullet_data.getDataPath()
@@ -192,7 +206,7 @@ class PandaEnv(gym.Env):
         else:
             return obs.copy()
 
-    def render(self, mode='human'):
+    def render(self, mode='human'): #is this the one to remove to disable rendering?
         view_matrix = p.computeViewMatrixFromYawPitchRoll(cameraTargetPosition=[0.7, 0, 0.65 + 0.05],
                                                           distance=.7,
                                                           yaw=90,
