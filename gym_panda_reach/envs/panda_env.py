@@ -39,14 +39,15 @@ class PandaEnv(gym.Env):
     def closest_points(self):
         finger1_ID = 9
         finger2_ID = 10
-        results1 = p.getClosestPoints(self.pandaUid, self.objectUid, math.inf, linkIndexA = finger1_ID)results1 = {tuple: 23340} ((0, 1, 4, 9, -1, (0.4410865099454862, -0.03376097024598358, 0.8805910742178501), (0.527107514073492, -0.02328899306833008, 0.8344509921307419), (-0.8762074310673812, -0.10666725312080749, 0.46998152607731497), 0.09817424627775233, 0.0, 0.0, (0.0, 0.0, 0.0... View
+        results1 = p.getClosestPoints(self.pandaUid, self.objectUid, math.inf, linkIndexA = finger1_ID)
         distance_r1 = []
         for i in results1:
-            distance_r1.append(results1[len(results1), 8])
+            distance_r1.append(i[8])
         results2 = p.getClosestPoints(self.pandaUid, self.objectUid, math.inf, linkIndexA = finger2_ID)
         distance_r2 = []
-        for i in results1:
-            distance_r2.append(results2[len(results1), 8])
+        for i in results2:
+            distance_r2.append(i[8])
+        total_closest_points = np.mean(distance_r1) + np.mean(distance_r2)
         return total_closest_points
 
     def compute_reward(self, pandaUid, objectUid):
