@@ -1,5 +1,7 @@
 import gym
 from gym import spaces
+
+from angorapy.common import reward
 from .gws import gws
 
 import os
@@ -54,7 +56,6 @@ class PandaEnv(gym.Env):
         gws_matrix = gws(pandaUid, objectUid)
         grasp_quality = max(gws_matrix) if len(gws_matrix) else -self.closest_points()
         return grasp_quality
-
 
     def step(self, action):
         p.configureDebugVisualizer(p.COV_ENABLE_SINGLE_STEP_RENDERING)
