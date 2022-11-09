@@ -39,6 +39,7 @@ class PandaEnv(gym.Env):
     #         return -d
 
     def closest_points(self):
+        total_closest_points = []
         finger1_ID = 9
         finger2_ID = 10
         results1 = p.getClosestPoints(self.pandaUid, self.objectUid, math.inf, linkIndexA = finger1_ID)
@@ -49,7 +50,7 @@ class PandaEnv(gym.Env):
         distance_r2 = []
         for i in results2:
             distance_r2.append(i[8])
-        total_closest_points = np.mean(distance_r1) + np.mean(distance_r2)
+        total_closest_points = np.mean(np.mean(distance_r1) + np.mean(distance_r2)) * 1000
         return total_closest_points
 
     def compute_reward(self, pandaUid, objectUid):
@@ -69,9 +70,9 @@ class PandaEnv(gym.Env):
         finger1 = action[0]
         finger2 = action[1]
 
-        hand_link = 9
-        finger1_link = 10
-        finger2_link = 11
+        hand_link = 8
+        finger1_ID = 9
+        finger2_ID = 10
 
         hand_joint = 8
         finger1_joint = 9
