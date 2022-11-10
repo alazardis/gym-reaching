@@ -22,6 +22,7 @@ class PandaEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self): #change GUI to DIRECT to disable rendering
+        self.observation = None
         self.step_counter = 0
         self.reward_type = "dense"
         p.connect(p.GUI, options='--background_color_red=0.0 --background_color_green=0.93--background_color_blue=0.54')
@@ -42,11 +43,13 @@ class PandaEnv(gym.Env):
         total_closest_points = []
         finger1_ID = 9
         finger2_ID = 10
-        results1 = p.getClosestPoints(self.pandaUid, self.objectUid, math.inf, linkIndexA = finger1_ID)
+        results1 = p.getClosestPoints(self.pandaUid, self.objectUid,
+                                      math.inf, linkIndexA=finger1_ID)
         distance_r1 = []
         for i in results1:
             distance_r1.append(i[8])
-        results2 = p.getClosestPoints(self.pandaUid, self.objectUid, math.inf, linkIndexA = finger2_ID)
+        results2 = p.getClosestPoints(self.pandaUid, self.objectUid,
+                                      math.inf, linkIndexA=finger2_ID)
         distance_r2 = []
         for i in results2:
             distance_r2.append(i[8])
@@ -55,7 +58,15 @@ class PandaEnv(gym.Env):
 
     def compute_reward(self, pandaUid, objectUid):
         gws_matrix = gws(pandaUid, objectUid)
-        grasp_quality = max(gws_matrix) if len(gws_matrix) else -self.closest_points()
+        print(len(gws_matrix))
+        # grasp_quality = max(gws_matrix) if len(gws_matrix) else -self.closest_points()
+        if len(gws_matrix):
+            grasp_quality = -math.inf
+            for i in gws_matrix:
+                if max(i) > grasp_quality:
+                    grasp_quality = max(i)
+        else:
+            grasp_quality = -self.closest_points()
         return grasp_quality
 
     def step(self, action):
@@ -108,7 +119,7 @@ class PandaEnv(gym.Env):
         # Compute reward and completition based: the reward is either dense or sparse
         gws_quality = self.compute_reward(self.pandaUid, self.objectUid)
         min_gws_quality = 0.5
-        min_steps_done = math.round(0.5 / (1.0/240.0))
+        min_steps_done = np.round(0.5 / (1.0/240.0))
 
         if gws_quality > min_gws_quality:
             self.__sim_done += 1
@@ -181,9 +192,10 @@ class PandaEnv(gym.Env):
                            parentLinkIndex=8)
 
         state_object = [0.45, 0, 0.825]
-        state_object_orientation = p.getQuaternionFromEuler([random.uniform(0, 2.0 * math.pi),
-                                                             random.uniform(0, 2.0 * math.pi),
-                                                             random.uniform(0, 2.0 * math.pi)])
+        state_object_orientation = p.getQuaternionFromEuler([0,0,0])
+        # state_object_orientation = p.getQuaternionFromEuler([random.uniform(0, 2.0 * math.pi),
+        #                                                      random.uniform(0, 2.0 * math.pi),
+        #                                                      random.uniform(0, 2.0 * math.pi)])
         #         self.objectUid = p.loadURDF(os.path.join(urdfRootPath, "random_urdfs/000/000.urdf"), basePosition=state_object)
         self.objectUid = p.loadURDF(os.path.join(dir_path, "goal.urdf"), basePosition=state_object,
                                     baseOrientation=state_object_orientation, useFixedBase=False)
