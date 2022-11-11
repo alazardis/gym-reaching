@@ -10,7 +10,12 @@ import pybullet_data
 import math
 import numpy as np
 import random
+from datetime import datetime
 
+now = datetime.now()
+
+current_time = now.strftime("%H:%M:%S")
+print("Current Time =", current_time)
 MAX_EPISODE_LEN = 20 * 100
 
 
@@ -58,16 +63,20 @@ class PandaEnv(gym.Env):
 
     def compute_reward(self, pandaUid, objectUid):
         gws_matrix = gws(pandaUid, objectUid)
-        print(len(gws_matrix))
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
         # grasp_quality = max(gws_matrix) if len(gws_matrix) else -self.closest_points()
         if len(gws_matrix):
             grasp_quality = -math.inf
             for i in gws_matrix:
                 if max(i) > grasp_quality:
                     grasp_quality = max(i)
+                    print(current_time,"score =", grasp_quality)
         else:
             grasp_quality = -self.closest_points()
+            print(current_time, "score =", grasp_quality)
         return grasp_quality
+
 
     def step(self, action):
         p.configureDebugVisualizer(p.COV_ENABLE_SINGLE_STEP_RENDERING)
@@ -120,6 +129,7 @@ class PandaEnv(gym.Env):
         gws_quality = self.compute_reward(self.pandaUid, self.objectUid)
         min_gws_quality = 0.5
         min_steps_done = np.round(0.5 / (1.0/240.0))
+        reward = gws_quality
 
         if gws_quality > min_gws_quality:
             self.__sim_done += 1

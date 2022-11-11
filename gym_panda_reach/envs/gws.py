@@ -73,7 +73,7 @@ def get_obj_info(oID): #TODO: what about not mesh objects?
 
 
 def gws(rID, oID):
-    print("eval gws")
+    # print("eval gws")
     local_frame_pos, max_radius = get_obj_info(oID)
     #sim uses center of mass as a reference for the Cartesian world transforms in getBasePositionAndOrientation
     obj_pos, obj_orn = p.getBasePositionAndOrientation(oID)
