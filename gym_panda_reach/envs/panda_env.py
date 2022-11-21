@@ -201,11 +201,11 @@ class PandaEnv(gym.Env):
         p.addUserDebugLine([0, 0, -1], [0, 0, 1], [0.9, 0.9, 0.9], parentObjectUniqueId=self.pandaUid,
                            parentLinkIndex=8)
 
-        state_object = [0.45, 0, 0.825]
-        state_object_orientation = p.getQuaternionFromEuler([0,0,0])
-        # state_object_orientation = p.getQuaternionFromEuler([random.uniform(0, 2.0 * math.pi),
-        #                                                      random.uniform(0, 2.0 * math.pi),
-        #                                                      random.uniform(0, 2.0 * math.pi)])
+        state_object = [0.43, 0, 0.885]
+        # state_object_orientation = p.getQuaternionFromEuler([0,0,0])
+        state_object_orientation = p.getQuaternionFromEuler([random.uniform(0, 2.0 * math.pi),
+                                                             random.uniform(0, 2.0 * math.pi),
+                                                             random.uniform(0, 2.0 * math.pi)])
         #         self.objectUid = p.loadURDF(os.path.join(urdfRootPath, "random_urdfs/000/000.urdf"), basePosition=state_object)
         self.objectUid = p.loadURDF(os.path.join(dir_path, "goal.urdf"), basePosition=state_object,
                                     baseOrientation=state_object_orientation, useFixedBase=False)
