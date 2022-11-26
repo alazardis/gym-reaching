@@ -10,6 +10,7 @@ import pybullet_data
 import math
 import numpy as np
 import random
+import matplotlib.pyplot as plt
 from datetime import datetime
 
 now = datetime.now()
@@ -64,17 +65,20 @@ class PandaEnv(gym.Env):
     def compute_reward(self, pandaUid, objectUid):
         gws_matrix = gws(pandaUid, objectUid)
         now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
+        current_time = now.strftime("%H:%M")
         # grasp_quality = max(gws_matrix) if len(gws_matrix) else -self.closest_points()
         if len(gws_matrix):
             grasp_quality = -math.inf
             for i in gws_matrix:
-                if max(i) > grasp_quality:
-                    grasp_quality = max(i)
+                metric = np.linalg.norm(i[0:3])
+                if metric > grasp_quality:
+                    grasp_quality = metric
                     print(current_time,"score =", grasp_quality)
         else:
             grasp_quality = -self.closest_points()
             print(current_time, "score =", grasp_quality)
+        plt.plot(grasp_quality, current_time)
+        plt.savefig("tuna_can.png")
         return grasp_quality
 
 
