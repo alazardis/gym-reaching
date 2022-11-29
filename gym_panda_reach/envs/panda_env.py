@@ -10,8 +10,10 @@ import pybullet_data
 import math
 import numpy as np
 import random
-import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 from datetime import datetime
+from time import time
 
 now = datetime.now()
 
@@ -63,9 +65,11 @@ class PandaEnv(gym.Env):
         return total_closest_points
 
     def compute_reward(self, pandaUid, objectUid):
+        grasp_quality = []
         gws_matrix = gws(pandaUid, objectUid)
-        now = datetime.now()
-        current_time = now.strftime("%H:%M")
+        # now = datetime.now()
+        # current_time = now.strftime("%H:%M")
+        current_time = round(time())
         # grasp_quality = max(gws_matrix) if len(gws_matrix) else -self.closest_points()
         if len(gws_matrix):
             grasp_quality = -math.inf
@@ -76,9 +80,11 @@ class PandaEnv(gym.Env):
                     print(current_time,"score =", grasp_quality)
         else:
             grasp_quality = -self.closest_points()
-            print(current_time, "score =", grasp_quality)
-        plt.plot(grasp_quality, current_time)
-        plt.savefig("tuna_can.png")
+            # print(current_time, "score =", grasp_quality)
+        data = {'Time Elapsed': [current_time],
+                'Grasp Quality': [grasp_quality]}
+        df = pd.DataFrame(data)
+        print(df)
         return grasp_quality
 
 
@@ -269,3 +275,7 @@ class PandaEnv(gym.Env):
 
     def close(self):
         p.disconnect()
+
+
+def compute_reward():
+    return None
