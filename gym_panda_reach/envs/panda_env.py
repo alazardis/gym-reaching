@@ -13,7 +13,6 @@ import random
 import pandas as pd
 import seaborn as sns
 from datetime import datetime
-from time import time
 
 now = datetime.now()
 
@@ -65,28 +64,28 @@ class PandaEnv(gym.Env):
         return total_closest_points
 
     def compute_reward(self, pandaUid, objectUid):
-        grasp_quality = []
+        now = datetime.now()
+        current_time = now.strftime("%H:%M")
+        gws_score = []
+        float_time = datetime.strptime(current_time, '%H:%M')
         gws_matrix = gws(pandaUid, objectUid)
-        # now = datetime.now()
-        # current_time = now.strftime("%H:%M")
-        current_time = round(time())
-        # grasp_quality = max(gws_matrix) if len(gws_matrix) else -self.closest_points()
         if len(gws_matrix):
             grasp_quality = -math.inf
             for i in gws_matrix:
                 metric = np.linalg.norm(i[0:3])
                 if metric > grasp_quality:
                     grasp_quality = metric
-                    print(current_time,"score =", grasp_quality)
+                    gws_score.append(grasp_quality)
         else:
             grasp_quality = -self.closest_points()
-            # print(current_time, "score =", grasp_quality)
-        data = {'Time Elapsed': [current_time],
-                'Grasp Quality': [grasp_quality]}
-        df = pd.DataFrame(data)
-        print(df)
+            gws_score.append(grasp_quality)
+        data = {'Current Time': [float_time],
+                'Grasp Quality': [gws_score],
+                'Achitecture': ['Simple']}
+        grasp_score = pd.DataFrame(data)
+        grasp_score.to_csv("tuna_can(simple).csv")
+        print(grasp_score)
         return grasp_quality
-
 
     def step(self, action):
         p.configureDebugVisualizer(p.COV_ENABLE_SINGLE_STEP_RENDERING)
