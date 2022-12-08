@@ -12,15 +12,4 @@ model_builder = get_model_builder("simple", "ffn")
 agent = PPOAgent(model_builder, env)
 agent.drill(100, 10, 200)
 
-now = datetime.now()
-current_time = now.strftime("%H:%M")
-
-data = {'Time Elapsed': [current_time],
-        'Grasp Quality': [panda_env.PandaEnv.compute_reward().grasp_quality]}
-
-df = pd.DataFrame(data)
-
-print(df)
-
-
 

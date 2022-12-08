@@ -13,6 +13,7 @@ import random
 import pandas as pd
 import seaborn as sns
 from datetime import datetime
+import csv
 
 now = datetime.now()
 
@@ -37,7 +38,8 @@ class PandaEnv(gym.Env):
                                      cameraTargetPosition=[0.65, -0.0, 0.65])
         self.action_space = spaces.Box(np.array([-1] * 4), np.array([1] * 4))
         self.observation_space = spaces.Box(np.array([-1] * 24), np.array([1] * 24))
-
+        self.score = pd.Series()
+        self.now = datetime.now()
     # def compute_reward(self, achieved_goal, goal):
     #     # Compute distance between goal and the achieved goal.
     #     d = goal_distance(achieved_goal, goal)
@@ -65,9 +67,8 @@ class PandaEnv(gym.Env):
 
     def compute_reward(self, pandaUid, objectUid):
         now = datetime.now()
-        current_time = now.strftime("%H:%M")
-        gws_score = []
-        float_time = datetime.strptime(current_time, '%H:%M')
+        current_time = now.strftime("%H:%M:%S")
+        float_time = datetime.strptime(current_time, '%H:%M:%S')
         gws_matrix = gws(pandaUid, objectUid)
         if len(gws_matrix):
             grasp_quality = -math.inf
@@ -75,16 +76,15 @@ class PandaEnv(gym.Env):
                 metric = np.linalg.norm(i[0:3])
                 if metric > grasp_quality:
                     grasp_quality = metric
-                    gws_score.append(grasp_quality)
         else:
             grasp_quality = -self.closest_points()
-            gws_score.append(grasp_quality)
-        data = {'Current Time': [float_time],
-                'Grasp Quality': [gws_score],
-                'Achitecture': ['Simple']}
-        grasp_score = pd.DataFrame(data)
-        grasp_score.to_csv("tuna_can(simple).csv")
-        print(grasp_score)
+        score = pd.Series([grasp_quality])
+        timestamp = pd.Series([float_time])
+        delta = datetime.now() - self.now
+        if delta.seconds >= 1:
+            score.to_csv("score.csv", header=False, mode="a", index=False)
+            timestamp.to_csv("timestamp.csv", header=False, mode="a", index=False)
+            self.now = datetime.now()
         return grasp_quality
 
     def step(self, action):
@@ -210,7 +210,7 @@ class PandaEnv(gym.Env):
         p.addUserDebugLine([0, 0, -1], [0, 0, 1], [0.9, 0.9, 0.9], parentObjectUniqueId=self.pandaUid,
                            parentLinkIndex=8)
 
-        state_object = [0.43, 0, 0.885]
+        state_object = [0.4475, 0.0, 0.885]
         # state_object_orientation = p.getQuaternionFromEuler([0,0,0])
         state_object_orientation = p.getQuaternionFromEuler([random.uniform(0, 2.0 * math.pi),
                                                              random.uniform(0, 2.0 * math.pi),
